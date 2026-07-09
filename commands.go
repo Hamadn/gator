@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -45,11 +44,7 @@ func handlerLogin(s *state, cmd command) error {
 
 	user := cmd.args[0]
 
-	_, err := s.db.GetUser(context.Background(), cmd.args[0])
-
-	if err == sql.ErrNoRows {
-		return fmt.Errorf("user does not exist")
-	}
+	_, err := s.db.GetUser(context.Background(), user)
 
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
@@ -69,32 +64,25 @@ func handlerRegister(s *state, cmd command) error {
 		return fmt.Errorf("usage: %s <name>", cmd.name)
 	}
 
+	name := cmd.args[0]
+
 	params := database.CreateUserParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Name:      cmd.args[0],
+		Name:      name,
 	}
 
-	_, err := s.db.GetUser(context.Background(), cmd.args[0])
-	if err == nil {
-		return fmt.Errorf("user already exists")
-	}
-
-	if err != sql.ErrNoRows {
-		return fmt.Errorf("failed to get user: %w", err)
-	}
-
-	createdUser, err := s.db.CreateUser(context.Background(), params)
+	user, err := s.db.CreateUser(context.Background(), params)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	err = s.cfg.SetUser(createdUser.Name)
+	err = s.cfg.SetUser(user.Name)
 	if err != nil {
 		return fmt.Errorf("failed to set user: %w", err)
 	}
-	fmt.Printf("User registered as %s\n", createdUser.Name)
+	fmt.Printf("User registered as %s\n", user.Name)
 	return nil
 
 }
