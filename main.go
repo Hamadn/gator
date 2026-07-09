@@ -13,12 +13,17 @@ import (
 
 func main() {
 	cfg, err := config.Read()
-	db, err := sql.Open("postgres", cfg.DBURL)
-	dbQueries := database.New(db)
 	if err != nil {
 		fmt.Println("Error reading config")
 		return
 	}
+
+	db, err := sql.Open("postgres", cfg.DBURL)
+	if err != nil {
+		log.Fatalf("error connecting to db: %v", err)
+	}
+	defer db.Close()
+	dbQueries := database.New(db)
 
 	State := state{
 		db:  dbQueries,
