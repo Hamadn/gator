@@ -95,3 +95,18 @@ func handlerReset(s *state, cmd command) error {
 	fmt.Println("Database reset successfully")
 	return nil
 }
+
+func handlerUsers(s *state, cmd command) error {
+	users, err := s.db.GetAllUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+	for _, user := range users {
+		if user.Name == s.cfg.CurrentUserName {
+			fmt.Printf("* %s (current)\n", user.Name)
+			continue
+		}
+		fmt.Printf("* %s\n", user.Name)
+	}
+	return nil
+}
