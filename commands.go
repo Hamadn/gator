@@ -119,3 +119,36 @@ func handlerAgg(s *state, cmd command) error {
 	fmt.Print(feed)
 	return nil
 }
+
+func handlerFeed(s *state, cmd command) error {
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if len(cmd.args) != 2 {
+		return fmt.Errorf("usage: %s <name> <url>", cmd.name)
+	}
+
+	name := cmd.args[0]
+	url := cmd.args[1]
+
+	params := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      name,
+		Url:       url,
+		UserID:    user.ID,
+	}
+
+	feed, err := s.db.CreateFeed(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("failed to create feed: %w", err)
+	}
+
+	fmt.Printf("Feed created successfully\n")
+	fmt.Printf("ID %s\n Name %s\n Url %s\n UserID %s\n Created %s\n Updated %s\n", feed.ID, feed.Name, feed.Url, feed.UserID, feed.CreatedAt, feed.UpdatedAt)
+	return nil
+
+}
