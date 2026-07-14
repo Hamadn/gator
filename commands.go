@@ -120,7 +120,7 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command) error {
 	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
@@ -151,4 +151,22 @@ func handlerFeed(s *state, cmd command) error {
 	fmt.Printf("ID %s\n Name %s\n Url %s\n UserID %s\n Created %s\n Updated %s\n", feed.ID, feed.Name, feed.Url, feed.UserID, feed.CreatedAt, feed.UpdatedAt)
 	return nil
 
+}
+
+func handlerFeeds(s *state, cmd command) error {
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get feeds: %w", err)
+	}
+
+	if len(feeds) == 0 {
+		fmt.Println("No feeds found")
+		return nil
+	}
+
+	fmt.Printf("Found %d feeds\n", len(feeds))
+	for _, feed := range feeds {
+		fmt.Printf("Name: %s\nUrl: %s\nUsername: %s\n", feed.Name, feed.Url, feed.Username)
+	}
+	return nil
 }
