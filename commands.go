@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Hamadn/gator/internal/config"
@@ -141,8 +142,8 @@ func handlerAddFeed(s *state, cmd command, user database.User) error {
 
 	feedParams := database.CreateFeedParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		Name:      name,
 		Url:       url,
 		UserID:    user.ID,
@@ -150,8 +151,8 @@ func handlerAddFeed(s *state, cmd command, user database.User) error {
 
 	feedFollowParams := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		UserID:    user.ID,
 		FeedID:    feedParams.ID,
 	}
@@ -254,6 +255,37 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 		return fmt.Errorf("failed to unfollow feed: %w", err)
 	}
 	fmt.Printf("Feed unfollowed successfully\n")
+
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	limit := 2
+	if len(cmd.args) == 1 {
+		if specifiedLimit, err := strconv.Atoi(cmd.args[0]); err == nil {
+			limit = specifiedLimit
+		} else {
+			return fmt.Errorf("invalid limit: %w", err)
+		}
+	}
+
+	postsParams := database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), postsParams)
+	if err != nil {
+		return fmt.Errorf("failed to get posts: %w", err)
+	}
+
+	for _, post := range posts {
+		fmt.Printf("%s from %s\n", post.PublishedAt.Time.Format("Mon Jan 2"), post.FeedName)
+		fmt.Printf("--- %s ---\n", post.Title)
+		fmt.Printf("    %v\n", post.Description.String)
+		fmt.Printf("Link: %s\n", post.Url)
+		fmt.Println("=====================================")
+	}
 
 	return nil
 }
