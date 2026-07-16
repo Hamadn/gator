@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -69,8 +70,8 @@ func handlerRegister(s *state, cmd command) error {
 
 	params := database.CreateUserParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		Name:      name,
 	}
 
@@ -114,7 +115,7 @@ func handlerUsers(s *state, cmd command) error {
 
 func handlerAgg(s *state, cmd command) error {
 	if len(cmd.args) != 1 {
-		return fmt.Errorf("usage: %s <time>", cmd.name)
+		return fmt.Errorf("usage: %s <time_between_reqs>", cmd.name)
 	}
 
 	timeBetweenReqs, err := time.ParseDuration(cmd.args[0])
@@ -122,12 +123,12 @@ func handlerAgg(s *state, cmd command) error {
 		return fmt.Errorf("failed to parse duration: %w", err)
 	}
 
-	fmt.Printf("Collecting feeds every %s\n", timeBetweenReqs)
+	log.Printf("Collecting feeds every %s\n", timeBetweenReqs)
 	ticker := time.NewTicker(timeBetweenReqs)
 	for ; ; <-ticker.C {
 		err := scrapeFeeds(s)
 		if err != nil {
-			fmt.Printf("Failed to scrape feeds: %s\n", err)
+			log.Printf("Failed to scrape feeds: %s\n", err)
 		}
 	}
 }
@@ -205,8 +206,8 @@ func handlerFeedFollow(s *state, cmd command, user database.User) error {
 
 	params := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
 		UserID:    user.ID,
 		FeedID:    feed.ID,
 	}
@@ -280,9 +281,16 @@ func handlerBrowse(s *state, cmd command, user database.User) error {
 	}
 
 	for _, post := range posts {
-		fmt.Printf("%s from %s\n", post.PublishedAt.Time.Format("Mon Jan 2"), post.FeedName)
+		if post.PublishedAt.Valid {
+			fmt.Printf("%s ", post.PublishedAt.Time.Format("Mon Jan 2"))
+		}
+
 		fmt.Printf("--- %s ---\n", post.Title)
-		fmt.Printf("    %v\n", post.Description.String)
+
+		if post.Description.Valid {
+			fmt.Printf("    %s\n", post.Description.String)
+		}
+
 		fmt.Printf("Link: %s\n", post.Url)
 		fmt.Println("=====================================")
 	}
